@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>COVID-19 Tracker</title>
+  <!-- Chart.js Library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Reset & Base Styles */
     * {
@@ -81,6 +83,15 @@
     .btn:hover {
       background-color: #0056b3;
     }
+    /* Chart Canvas Styles */
+    #globalChartContainer {
+      max-width: 700px;
+      margin: 20px auto;
+    }
+    #globalChart {
+      width: 100%;
+      height: 400px;
+    }
   </style>
 </head>
 <body>
@@ -93,8 +104,12 @@
       <div class="stats" id="globalStats">
         <!-- Global data cards will be injected here -->
       </div>
-      <div style="text-align:center;">
-         <button class="btn" id="refreshGlobal">Refresh Global Data</button>
+      <div style="text-align:center; margin: 10px;">
+        <button class="btn" id="refreshGlobal">Refresh Global Data</button>
+      </div>
+      <!-- Global Chart Container -->
+      <div id="globalChartContainer">
+        <canvas id="globalChart"></canvas>
       </div>
     </div>
     
@@ -112,13 +127,17 @@
       </div>
     </div>
   </div>
+<footer style="text-align: center; padding: 10px; margin-top: 20px; background-color: #fff;">
+  Bocaletto Luca
+</footer>
 
   <script>
     "use strict";
-    
+
     // Variables to store fetched data
     let globalData = {};
     let countriesData = [];
+    let globalChart;
 
     // Helper: Format numbers with commas
     function formatNumber(num) {
@@ -138,7 +157,7 @@
       return card;
     }
 
-    // Display Global Statistics
+    // Display Global Statistics in Cards
     function displayGlobalStats(data) {
       const container = document.getElementById('globalStats');
       container.innerHTML = '';
@@ -149,9 +168,12 @@
       container.appendChild(createCard('Critical Cases', formatNumber(data.critical)));
       const updated = new Date(data.updated).toLocaleString();
       container.appendChild(createCard('Last Updated', updated));
+      
+      // Update the chart with new data
+      updateGlobalChart(data);
     }
 
-    // Display Country Statistics
+    // Display Country Statistics in Cards
     function displayCountryStats(data) {
       const container = document.getElementById('countryStats');
       container.innerHTML = '';
@@ -167,7 +189,57 @@
       container.appendChild(createCard('Last Updated', updated));
     }
 
-    // Fetch Global Data
+    // Update or create the global chart using Chart.js
+    function updateGlobalChart(data) {
+      const ctx = document.getElementById('globalChart').getContext('2d');
+      const chartData = {
+        labels: ["Total Cases", "Deaths", "Recovered", "Active", "Critical"],
+        datasets: [{
+          label: 'Global COVID-19 Stats',
+          data: [data.cases, data.deaths, data.recovered, data.active, data.critical],
+          backgroundColor: [
+            'rgba(54,162,235,0.7)',
+            'rgba(255,99,132,0.7)',
+            'rgba(75,192,192,0.7)',
+            'rgba(255,206,86,0.7)',
+            'rgba(153,102,255,0.7)'
+          ],
+          borderColor: [
+            'rgb(54,162,235)',
+            'rgb(255,99,132)',
+            'rgb(75,192,192)',
+            'rgb(255,206,86)',
+            'rgb(153,102,255)'
+          ],
+          borderWidth: 1
+        }]
+      };
+
+      if (globalChart) {
+        // Update existing chart data
+        globalChart.data.datasets[0].data = [data.cases, data.deaths, data.recovered, data.active, data.critical];
+        globalChart.update();
+      } else {
+        globalChart = new Chart(ctx, {
+          type: 'bar',
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) { return value.toLocaleString(); }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Fetch Global Data from disease.sh API
     function fetchGlobalData() {
       fetch("https://disease.sh/v3/covid-19/all")
         .then(response => response.json())
@@ -180,7 +252,7 @@
         });
     }
 
-    // Fetch Countries Data and Populate Dropdown
+    // Fetch Countries Data and populate the dropdown
     function fetchCountriesData() {
       fetch("https://disease.sh/v3/covid-19/countries")
         .then(response => response.json())
@@ -197,7 +269,6 @@
     function populateCountrySelect(data) {
       const select = document.getElementById('countrySelect');
       select.innerHTML = '<option value="">Select a country</option>';
-      // Sort countries alphabetically
       data.sort((a, b) => a.country.localeCompare(b.country));
       data.forEach(countryData => {
         const option = document.createElement('option');
@@ -216,7 +287,6 @@
         document.getElementById('refreshCountry').style.display = "none";
         return;
       }
-      // Find the selected country data from the stored array
       const countryData = countriesData.find(item => item.country === selectedCountry);
       if (countryData) {
         displayCountryStats(countryData);
