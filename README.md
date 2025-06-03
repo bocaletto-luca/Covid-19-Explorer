@@ -9,6 +9,7 @@
 ![API](https://img.shields.io/badge/API-disease.sh%20API-9cf?style=flat-square&logo=api)  
 ![Chart.js](https://img.shields.io/badge/Chart.js-FF6384?style=flat-square&logo=chartdotjs)
 
+[![Test Online](https://img.shields.io/badge/Test%20Online-Click%20Here-brightgreen?style=for-the-badge)](https://bocaletto-luca.github.io/Covid-19-Explorer/)
 ---
 
 ## Overview 🚀
